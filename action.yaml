@@ -1,0 +1,42 @@
+name: 'deploy-helm-releases'
+description: ''
+inputs:
+  base_dir:
+    description: ''
+    default: ${{ github.workspace }}
+  releases:
+    description: ''
+    required: true
+  max_history:
+    description: ''
+    default: '3'
+  kubeconfig_content:
+    description: ''
+    required: true
+  kubeconfig_filename:
+    description: ''
+    default: kubeconfig
+runs:
+  using: 'composite'
+  steps:
+    - run: echo "${{ inputs.kubeconfig_content }}" > ${{ inputs.kubeconfig_filename }}
+      shell: bash
+    - run: chmod 0600 ${{ inputs.kubeconfig_filename }}
+      shell: bash
+    - name: deploy releases
+      run: |
+        [[ -z ${RUNNER_DEBUG} ]] && HELM_EXTRA_ARGUMENTS="${HELM_EXTRA_ARGUMENTS} --debug"
+        for R in ${{ inputs.releases }}; do
+          DIR="${{ inputs.base_dir }}/${R}"
+          source "${DIR}/parameters"
+          helm upgrade --install ${RELEASE_NAME} ${CHART}       \
+                       --values "${DIR}/values"                 \
+                       --version ${CHART_VERSION}               \
+                       --repo ${REPOSITORY}                     \
+                       --namespace ${NAMESPACE}                 \
+                       --history-max ${{ inputs.max_history }}  \
+                       ${HELM_EXTRA_ARGUMENTS}
+        done
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig_filename }}
+      shell: bash
