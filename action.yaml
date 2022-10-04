@@ -25,17 +25,10 @@ runs:
       shell: bash
     - name: deploy releases
       run: |
-        [[ -z ${RUNNER_DEBUG} ]] && HELM_EXTRA_ARGUMENTS="${HELM_EXTRA_ARGUMENTS} --debug"
         for R in ${{ inputs.releases }}; do
           DIR="${{ inputs.base_dir }}/${R}"
           source "${DIR}/parameters"
-          helm upgrade --install ${RELEASE_NAME} ${CHART}       \
-                       --values "${DIR}/values"                 \
-                       --version ${CHART_VERSION}               \
-                       --repo ${REPOSITORY}                     \
-                       --namespace ${NAMESPACE}                 \
-                       --history-max ${{ inputs.max_history }}  \
-                       ${HELM_EXTRA_ARGUMENTS}
+          helm upgrade ${RELEASE_NAME} ${CHART} --install --debug --namespace ${NAMESPACE} --values "${DIR}/values" --version ${CHART_VERSION} --repo ${REPOSITORY} --history-max ${{ inputs.max_history }} ${EXTRA_ARGS}
         done
       env:
         KUBECONFIG: ${{ inputs.kubeconfig_filename }}
