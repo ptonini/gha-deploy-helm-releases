@@ -1,35 +1,36 @@
 name: 'deploy-helm-releases'
 description: ''
 inputs:
-  base_dir:
-    description: ''
-    default: ${{ github.workspace }}
   releases:
     description: ''
     required: true
+  kubeconfig:
+    description: ''
+    required: false
+  kubeconfig_file:
+    description: ''
+    required: false
+    default: ${{ github.workspace }}/kubeconfig
   max_history:
     description: ''
     default: '3'
-  kubeconfig_content:
-    description: ''
-    required: true
-  kubeconfig_filename:
-    description: ''
-    default: kubeconfig
 runs:
   using: 'composite'
   steps:
-    - run: echo "${{ inputs.kubeconfig_content }}" > ${{ inputs.kubeconfig_filename }}
+    - run: echo '${{ inputs.kubeconfig }}' > ${{ inputs.kubeconfig_file }} && chmod 0400 ${{ inputs.kubeconfig_file }}
+      if: inputs.kubeconfig
       shell: bash
-    - run: chmod 0600 ${{ inputs.kubeconfig_filename }}
-      shell: bash
-    - name: deploy releases
-      run: |
-        for R in ${{ inputs.releases }}; do
-          DIR="${{ inputs.base_dir }}/${R}"
-          source "${DIR}/parameters"
-          helm upgrade ${RELEASE_NAME} ${CHART} --install --debug --namespace ${NAMESPACE} --values "${DIR}/values" --version ${CHART_VERSION} --repo ${REPOSITORY} --history-max ${{ inputs.max_history }} ${EXTRA_ARGS}
+    - run: |
+        for RELEASE in ${{ inputs.releases }}; do
+          source "${RELEASE}/parameters"
+          helm upgrade --install ${RELEASE_NAME} ${CHART} \
+              --namespace ${NAMESPACE} \
+              --values "${RELEASE}/values" \
+              --version ${CHART_VERSION} \
+              --repo ${REPOSITORY} \
+              --history-max ${{ inputs.max_history }} \
+              --debug ${EXTRA_ARGS}
         done
-      env:
-        KUBECONFIG: ${{ inputs.kubeconfig_filename }}
       shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig_file }}
