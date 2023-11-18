@@ -13,12 +13,6 @@ runs:
     - run: |
         for RELEASE in ${{ inputs.releases }}; do
           source "${RELEASE}/parameters"
-          helm upgrade --install ${RELEASE_NAME} ${CHART} \
-              --namespace ${NAMESPACE} \
-              --values "${RELEASE}/values" \
-              --version ${CHART_VERSION} \
-              --repo ${REPOSITORY} \
-              --history-max ${{ inputs.max_history }} \
-              --debug ${EXTRA_ARGS}
+          helm upgrade -i ${RELEASE_NAME} ${CHART} -n ${NAMESPACE} --values "${RELEASE}/values" --version ${CHART_VERSION} --repo ${REPOSITORY} --history-max ${{ inputs.max_history }} ${EXTRA_ARGS} --debug
         done
       shell: bash
